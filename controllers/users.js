@@ -30,3 +30,26 @@ exports.addUser = (req, res, next) => {
 
   //   console.log(req.body);
 };
+
+exports.loginUser = (req, res, next) => {
+  const { email, password } = req.body;
+
+  Users.findOne({
+    where: { email: email, password: password },
+  })
+    .then((user) => {
+      if (user) {
+        console.log("User found:");
+        res.status(200).json({ message: "Login successful", user: user });
+      } else {
+        console.log("User not found");
+        res.status(401).json({ message: "User not found" });
+      }
+    })
+    .catch((err) => {
+      console.log("Error:", err);
+      res.status(400).json({ message: "Error logging in" });
+    });
+
+  //   console.log(req.body);
+};

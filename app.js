@@ -13,6 +13,8 @@ app.use(cors());
 
 app.use("/add-user", userController.addUser);
 
+app.use("/login-user", userController.loginUser);
+
 Sequelize.sync()
   .then((result) => {
     // console.error(result);
