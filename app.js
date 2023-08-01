@@ -16,7 +16,7 @@ app.use("/add-user", userController.addUser);
 
 app.use("/login-user", userController.loginUser);
 
-app.use("/add-expences/user/:id", expenseController.addExpense);
+app.use("/add-expences", expenseController.addExpense);
 
 app.use("/delete-expences/:id", expenseController.deleteExpense);
 
