@@ -1,6 +1,7 @@
 const Users = require("../models/users-table");
+const bcrypt = require("bcrypt");
 
-exports.addUser = (req, res, next) => {
+exports.addUser = async (req, res, next) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res
@@ -8,7 +9,10 @@ exports.addUser = (req, res, next) => {
       .json({ error: "Email And Password are required fields!" });
   }
 
-  Users.create({ username: username, email: email, password: password })
+  const salt = await bcrypt.genSalt(10);
+  const secretpass = await bcrypt.hash(password, salt);
+
+  Users.create({ username: username, email: email, password: secretpass })
     .then((userData) => {
       res.status(201).json({
         message: "Account created successfully!",
@@ -33,18 +37,24 @@ exports.addUser = (req, res, next) => {
 
 exports.loginUser = (req, res, next) => {
   const { email, password } = req.body;
-
-  Users.findOne({
-    where: { email: email, password: password },
+  //   bcrypt.compare(password, Users.password, function (err, result) {
+  //     console.log(result);
+  //   });
+  Users.findAll({
+    where: { email: email },
   })
     .then((user) => {
-      if (user) {
-        console.log("User found:");
-        res.status(200).json({ message: "Login successful", user: user });
-      } else {
-        console.log("User not found");
-        res.status(401).json({ message: "User not found" });
-      }
+      bcrypt.compare(password, user[0].password, function (err, result) {
+        // console.log(result);
+        if (result) {
+          // console.log(password)
+          // console.log("User found:",user[0].password);
+          res.status(200).json({ message: "Login successful", user: user });
+        } else {
+          console.log("User not found");
+          res.status(401).json({ message: "User not found" });
+        }
+      });
     })
     .catch((err) => {
       console.log("Error:", err);
