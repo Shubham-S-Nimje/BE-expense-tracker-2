@@ -92,7 +92,7 @@ exports.fetchTotalexpense = async (req, res, next) => {
     const formattedData = totalExpenses.map((expense) => ({
       userId: expense.user.id,
       username: expense.user.username,
-      totalExpensemoney: expense.getDataValue('totalExpensemoney'), // Use getDataValue to get the integer value
+      totalExpensemoney: expense.getDataValue('totalExpensemoney'),
     }));
     // console.log(formattedData);
 
