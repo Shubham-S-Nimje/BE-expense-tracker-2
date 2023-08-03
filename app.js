@@ -12,6 +12,8 @@ const forgotpassController = require("./controllers/forgotpass");
 const User = require("./models/user-table");
 const Order = require("./models/payment-table");
 const Expense = require("./models/expense-table");
+const Forgotpass = require("./models/forgot-pass");
+
 const authenticateUser = require("./middleware/auth");
 
 const app = express();
@@ -31,6 +33,11 @@ app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
 app.use("/add-expences", authenticateUser, expenseController.addExpense);
 
 app.use("/forgotpassword", forgotpassController.forgotPassword);
+
+app.get("/resetpassword/:requestId", forgotpassController.resetpassword);
+
+app.post("/updatepassword/:resetId", forgotpassController.updatepassword);
+
 
 app.use(
   "/delete-expences/:id",
@@ -53,6 +60,9 @@ Expense.belongsTo(User);
 
 User.hasMany(Order);
 Order.belongsTo(User);
+
+User.hasMany(Forgotpass);
+Forgotpass.belongsTo(User);
 
 // Sequelize.sync({force:true})
 Sequelize.sync()
