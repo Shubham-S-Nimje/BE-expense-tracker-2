@@ -3,6 +3,7 @@ const User = require("../models/user-table");
 const Order = require("../models/payment-table");
 
 const Razorpay = require("razorpay");
+const sequelize = require("../database");
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = dotenv.parsed;
 
 var rzpinstance = new Razorpay({
@@ -19,26 +20,33 @@ exports.premiumUser = async (req, res, next) => {
   //   status: "pending",
   // })
   // console.log(req.user.id)
+  const t = await sequelize.transaction();
   try {
     const options = {
       amount: 50000,
       currency: "INR",
       // recept: "recpt45jk",
     };
-    const order = await rzpinstance.orders.create(options);
+    const order = await rzpinstance.orders.create(options, { transaction: t });
     // res.json(order);
-    if (!order) return res.status(500).send("Some error occured");
-    await Order.create({
-      paymentid: order.id,
-      orderid: order.id,
-      status: "PENDING",
-    });
-
+    if (!order) {
+      await t.rollback();
+      return res.status(500).send("Some error occured");
+    }
+    await Order.create(
+      {
+        paymentid: order.id,
+        orderid: order.id,
+        status: "PENDING",
+      },
+      { transaction: t }
+    );
     res.status(201).json({
       order: order,
       key_id: rzpinstance.key_id,
     });
   } catch (error) {
+    await t.commit();
     console.log(error.message);
     res.status(500).send(error);
   }
@@ -53,6 +61,7 @@ exports.paymentSuccess = async (req, res, next) => {
     razorpaySignature,
   } = req.body;
   // console.log(req.user.id);
+  const t = await sequelize.transaction();
   try {
     const promise1 = Order.update(
       {
@@ -65,6 +74,7 @@ exports.paymentSuccess = async (req, res, next) => {
         where: {
           orderid: razorpayOrderId,
         },
+        transaction: t,
       }
     );
 
@@ -81,6 +91,7 @@ exports.paymentSuccess = async (req, res, next) => {
 
     Promise.all([promise1, promise2])
       .then(() => {
+        t.commit();
         res.status(201).json({
           msg: "Payment successfull!.",
           orderId: razorpayOrderId,
@@ -88,9 +99,11 @@ exports.paymentSuccess = async (req, res, next) => {
         });
       })
       .catch((err) => {
+        t.rollback();
         res.status(400).json({ error: err });
       });
   } catch (err) {
+    t.rollback();
     //   console.log(err);
     return res.status(400).json({ error: err });
   }

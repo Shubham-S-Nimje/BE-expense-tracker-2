@@ -1,6 +1,7 @@
 const { Sequelize } = require("sequelize");
 const Expense = require("../models/expense-table");
 const User = require("../models/user-table");
+const sequelize = require("../database");
 
 exports.addExpense = async (req, res, next) => {
   const { expensemoney, expensedescription, expensecategory } = await req.body;
@@ -12,31 +13,37 @@ exports.addExpense = async (req, res, next) => {
     });
   }
   // console.log(req.user.id);
+  const t = await sequelize.transaction();
 
   try {
-    const addExpense = await Expense.create({
-      expensemoney: expensemoney,
-      expensedescription: expensedescription,
-      expensecategory: expensecategory,
-      userId: req.user.id,
-    });
+    const addExpense = await Expense.create(
+      {
+        expensemoney: expensemoney,
+        expensedescription: expensedescription,
+        expensecategory: expensecategory,
+        userId: req.user.id,
+      },
+      { transaction: t }
+    );
 
     const userExpenses = await Expense.sum("expensemoney", {
       where: { userId: req.user.id },
+      transaction: t,
     });
     //   console.log(userExpenses);
 
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findByPk(req.user.id, { transaction: t });
     //   console.log(user);
     user.totalExpensemoney = userExpenses;
-    await user.save();
-
+    await user.save({ transaction: t });
+    await t.commit();
     res.status(201).json({
       message: "Expense added successfully!",
       data: addExpense,
     });
   } catch (err) {
     //   console.log(err);
+    await t.rollback();
     return res.status(400).json({ error: "Error while adding expense" });
   }
 };
@@ -67,19 +74,35 @@ exports.fetchExpense = (req, res, next) => {
     });
 };
 
-exports.deleteExpense = (req, res, next) => {
+exports.deleteExpense = async (req, res, next) => {
   const expenseid = req.params.id;
   // console.log(expenseid);
-  Expense.destroy({
-    where: { id: expenseid },
-  })
-    .then((result) => {
-      res.status(201).json({ message: "Expence deleted successfully" });
-    })
-    .catch((err) => {
-      console.log("Error:", err);
-      res.status(400).json({ message: "Error while deleting expence" });
+
+  const t = await sequelize.transaction();
+  try {
+    await Expense.destroy({
+      where: { id: expenseid },
+      transaction: t,
     });
+
+    const userExpenses = await Expense.sum("expensemoney", {
+      where: { userId: req.user.id },
+      transaction: t,
+    });
+
+    const user = await User.findByPk(req.user.id, { transaction: t });
+    if (user) {
+      user.totalExpensemoney = userExpenses;
+      await user.save({ transaction: t });
+    }
+
+    await t.commit();
+    res.status(201).json({ message: "Expence deleted successfully" });
+  } catch (err) {
+    await t.rollback();
+    console.log("Error:", err);
+    res.status(400).json({ message: "Error while deleting expence" });
+  }
 };
 
 exports.fetchTotalexpense = async (req, res, next) => {
