@@ -52,7 +52,6 @@ exports.addUser = async (req, res, next) => {
       errorin = `Username "${err.fields.username_UNIQUE}"`;
 
       // console.log(err.fields.username_UNIQUE);
-
     } else if (err.fields.email_UNIQUE) {
       errorin = `Email "${err.fields.email_UNIQUE}"`;
 
@@ -74,7 +73,6 @@ exports.loginUser = (req, res, next) => {
   })
     .then((user) => {
       bcrypt.compare(password, user[0].password, function (err, result) {
-
         // console.log(result);
 
         if (result) {
@@ -120,4 +118,9 @@ exports.fetchUser = (req, res, next) => {
         .status(400)
         .json({ message: "Error while fetching user", error: err });
     });
+};
+
+exports.forgotPassword = async (req, res, next) => {
+  const { email } = req.body;
+  console.log(email);
 };
