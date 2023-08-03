@@ -1,8 +1,8 @@
-const Users = require("../models/users-table");
+const User = require("../models/user-table");
 const bcrypt = require("bcrypt");
-var jwt = require('jsonwebtoken');
+var jwt = require("jsonwebtoken");
 
-const JWT_SECRET = 'expense@app'
+const JWT_SECRET = "expense@app";
 exports.addUser = async (req, res, next) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
@@ -14,18 +14,18 @@ exports.addUser = async (req, res, next) => {
   const salt = await bcrypt.genSalt(10);
   const secretpass = await bcrypt.hash(password, salt);
 
-  Users.create({ username: username, email: email, password: secretpass })
+  User.create({ username: username, email: email, password: secretpass, ispremiumuser: false })
     .then((userData) => {
       const data = {
-        user:{
-          id:userData.id
-        }
-      }
-      const authToken = jwt.sign(data, JWT_SECRET)
+        user: {
+          id: userData.id,
+        },
+      };
+      const authToken = jwt.sign(data, JWT_SECRET);
       // console.log(jwtdata)
       res.status(201).json({
         message: "Account created successfully!",
-        data: {authToken},
+        data: { authToken },
       });
     })
     .catch((err) => {
@@ -49,22 +49,24 @@ exports.loginUser = (req, res, next) => {
   //   bcrypt.compare(password, Users.password, function (err, result) {
   //     console.log(result);
   //   });
-  Users.findAll({
+  User.findAll({
     where: { email: email },
   })
     .then((user) => {
       bcrypt.compare(password, user[0].password, function (err, result) {
-        console.log(result);
+        // console.log(result);
         if (result) {
           // console.log(user[0].id)
           // console.log("User found:",user[0].password);
           const data = {
-            user:{
-              id:user[0].id
-            }
-          }
-          const authToken = jwt.sign(data, JWT_SECRET)
-          res.status(200).json({ message: "Login successful", user: {authToken} });
+            user: {
+              id: user[0].id,
+            },
+          };
+          const authToken = jwt.sign(data, JWT_SECRET);
+          res
+            .status(200)
+            .json({ message: "Login successful", user: { authToken } });
         } else {
           console.log("User not found");
           res.status(401).json({ message: "User not found" });

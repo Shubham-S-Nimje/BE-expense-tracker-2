@@ -1,20 +1,22 @@
-const Expenses = require("../models/expenses-table");
+const Expense = require("../models/expense-table");
 
 exports.addExpense = async (req, res, next) => {
-  const { expensemoney, expensedescription, expensecategory, userid } =
-    req.body;
-  if (!expensemoney || !expensedescription || !expensecategory || !userid) {
+  const { expensemoney, expensedescription, expensecategory } =
+    await req.body;
+    // console.log(req.body.userid)
+  if (!expensemoney || !expensedescription || !expensecategory) {
     return res.status(400).json({
       error:
         "Expensemoney, Expensedescription and Expensecategory are required fields!",
     });
   }
+  // console.log(req.user.id);
 
-  Expenses.create({
+  Expense.create({
     expensemoney: expensemoney,
     expensedescription: expensedescription,
     expensecategory: expensecategory,
-    userid: userid,
+    userId: req.user.id,
   })
     .then((ExpenseData) => {
       res.status(201).json({
@@ -27,15 +29,15 @@ exports.addExpense = async (req, res, next) => {
       return res.status(400).json({ error: "Error while adding expense" });
     });
 
-  // console.log(req.body);
 };
 
 exports.fetchExpense = (req, res, next) => {
-  const { userlocalId } = req.body;
+  const { userid } = req.body;
   // console.log(req.body);
-  Expenses.findAll({
+  // console.log(req.user.id)
+  Expense.findAll({
     where: {
-      userid: userlocalId,
+      userid: req.user.id,
     },
   })
     .then((result) => {
@@ -57,8 +59,8 @@ exports.fetchExpense = (req, res, next) => {
 
 exports.deleteExpense = (req, res, next) => {
   const expenseid = req.params.id;
-  console.log(expenseid);
-  Expenses.destroy({
+  // console.log(expenseid);
+  Expense.destroy({
     where: { id: expenseid },
   })
     .then((result) => {
