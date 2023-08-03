@@ -7,6 +7,7 @@ const cors = require("cors");
 const userController = require("./controllers/users");
 const expenseController = require("./controllers/expenses");
 const paymentController = require("./controllers/payment");
+const forgotpassController = require("./controllers/forgotpass");
 
 const User = require("./models/user-table");
 const Order = require("./models/payment-table");
@@ -25,11 +26,11 @@ app.use("/login-user", userController.loginUser);
 
 app.use("/fetch-user", authenticateUser, userController.fetchUser);
 
-app.use("/forgotpassword", userController.forgotPassword);
-
 app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
 
 app.use("/add-expences", authenticateUser, expenseController.addExpense);
+
+app.use("/forgotpassword", forgotpassController.forgotPassword);
 
 app.use(
   "/delete-expences/:id",
