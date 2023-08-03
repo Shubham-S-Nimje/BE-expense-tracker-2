@@ -1,9 +1,10 @@
+const { Sequelize } = require("sequelize");
 const Expense = require("../models/expense-table");
+const User = require("../models/user-table");
 
 exports.addExpense = async (req, res, next) => {
-  const { expensemoney, expensedescription, expensecategory } =
-    await req.body;
-    // console.log(req.body.userid)
+  const { expensemoney, expensedescription, expensecategory } = await req.body;
+  // console.log(req.body.userid)
   if (!expensemoney || !expensedescription || !expensecategory) {
     return res.status(400).json({
       error:
@@ -28,7 +29,6 @@ exports.addExpense = async (req, res, next) => {
       //   console.log(err);
       return res.status(400).json({ error: "Error while adding expense" });
     });
-
 };
 
 exports.fetchExpense = (req, res, next) => {
@@ -70,4 +70,35 @@ exports.deleteExpense = (req, res, next) => {
       console.log("Error:", err);
       res.status(400).json({ message: "Error while deleting expence" });
     });
+};
+
+exports.fetchTotalexpense = async (req, res, next) => {
+  try {
+    const totalExpenses = await Expense.findAll({
+      attributes: [
+        "userId",
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.cast(Sequelize.col("expensemoney"), "INTEGER")
+          ),
+          "totalExpensemoney",
+        ],
+      ],
+      group: ["userId"],
+      include: [{ model: User, attributes: ["id", "username"] }],
+    });
+
+    const formattedData = totalExpenses.map((expense) => ({
+      userId: expense.user.id,
+      username: expense.user.username,
+      totalExpensemoney: expense.getDataValue('totalExpensemoney'), // Use getDataValue to get the integer value
+    }));
+    // console.log(formattedData);
+
+    res.status(200).json(formattedData);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error fetching total expenses" });
+  }
 };

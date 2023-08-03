@@ -14,7 +14,12 @@ exports.addUser = async (req, res, next) => {
   const salt = await bcrypt.genSalt(10);
   const secretpass = await bcrypt.hash(password, salt);
 
-  User.create({ username: username, email: email, password: secretpass, ispremiumuser: false })
+  User.create({
+    username: username,
+    email: email,
+    password: secretpass,
+    ispremiumuser: false,
+  })
     .then((userData) => {
       const data = {
         user: {
@@ -79,4 +84,23 @@ exports.loginUser = (req, res, next) => {
     });
 
   //   console.log(req.body);
+};
+
+exports.fetchUser = (req, res, next) => {
+  const { id } = req.user;
+  // console.log(id);
+  User.findOne({
+    where: { id: id },
+  })
+    .then((user) => {
+      res
+        .status(201)
+        .json({ message: "User fetched successfully", user: user });
+    })
+    .catch((err) => {
+      // console.log("Error:", err);
+      res
+        .status(400)
+        .json({ message: "Error while fetching user", error: err });
+    });
 };

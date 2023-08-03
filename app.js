@@ -23,6 +23,10 @@ app.use("/add-user", userController.addUser);
 
 app.use("/login-user", userController.loginUser);
 
+app.use("/fetch-user", authenticateUser, userController.fetchUser);
+
+app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
+
 app.use("/add-expences", authenticateUser, expenseController.addExpense);
 
 app.use(
@@ -33,7 +37,7 @@ app.use(
 
 app.use("/fetch-expences", authenticateUser, expenseController.fetchExpense);
 
-app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
+app.use("/fetch-totalexpencesbyuser", authenticateUser, expenseController.fetchTotalexpense);
 
 app.use("/payment-success", authenticateUser, paymentController.paymentSuccess);
 

@@ -20,7 +20,7 @@ const authenticateUser = (req, res, next) => {
           return res.status(404).json({ message: "User not found" });
         }
 
-        console.log(JSON.stringify(user))
+        // console.log(JSON.stringify(user))
         req.user = user;
         next();
       })
