@@ -13,22 +13,32 @@ exports.addExpense = async (req, res, next) => {
   }
   // console.log(req.user.id);
 
-  Expense.create({
-    expensemoney: expensemoney,
-    expensedescription: expensedescription,
-    expensecategory: expensecategory,
-    userId: req.user.id,
-  })
-    .then((ExpenseData) => {
-      res.status(201).json({
-        message: "Expense added successfully!",
-        data: ExpenseData,
-      });
-    })
-    .catch((err) => {
-      //   console.log(err);
-      return res.status(400).json({ error: "Error while adding expense" });
+  try {
+    const addExpense = await Expense.create({
+      expensemoney: expensemoney,
+      expensedescription: expensedescription,
+      expensecategory: expensecategory,
+      userId: req.user.id,
     });
+
+    const userExpenses = await Expense.sum("expensemoney", {
+      where: { userId: req.user.id },
+    });
+    //   console.log(userExpenses);
+
+    const user = await User.findByPk(req.user.id);
+    //   console.log(user);
+    user.totalExpensemoney = userExpenses;
+    await user.save();
+
+    res.status(201).json({
+      message: "Expense added successfully!",
+      data: addExpense,
+    });
+  } catch (err) {
+    //   console.log(err);
+    return res.status(400).json({ error: "Error while adding expense" });
+  }
 };
 
 exports.fetchExpense = (req, res, next) => {
@@ -92,7 +102,7 @@ exports.fetchTotalexpense = async (req, res, next) => {
     const formattedData = totalExpenses.map((expense) => ({
       userId: expense.user.id,
       username: expense.user.username,
-      totalExpensemoney: expense.getDataValue('totalExpensemoney'),
+      totalExpensemoney: expense.getDataValue("totalExpensemoney"),
     }));
     // console.log(formattedData);
 
