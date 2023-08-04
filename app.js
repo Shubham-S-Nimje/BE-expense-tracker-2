@@ -8,11 +8,13 @@ const userController = require("./controllers/users");
 const expenseController = require("./controllers/expenses");
 const paymentController = require("./controllers/payment");
 const forgotpassController = require("./controllers/forgotpass");
+const downloadexpenseController = require("./controllers/downloadexpenses");
 
 const User = require("./models/user-table");
 const Order = require("./models/payment-table");
 const Expense = require("./models/expense-table");
 const Forgotpass = require("./models/forgot-pass");
+const ExpenseDownloadhistory = require("./models/expense-download-history.js");
 
 const authenticateUser = require("./middleware/auth");
 
@@ -32,12 +34,17 @@ app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
 
 app.use("/add-expences", authenticateUser, expenseController.addExpense);
 
+app.use(
+  "/user/download-expenses",
+  authenticateUser,
+  downloadexpenseController.downloadExpense
+);
+
 app.use("/forgotpassword", forgotpassController.forgotPassword);
 
 app.get("/resetpassword/:requestId", forgotpassController.resetpassword);
 
 app.post("/updatepassword/:resetId", forgotpassController.updatepassword);
-
 
 app.use(
   "/delete-expences/:id",
@@ -46,6 +53,8 @@ app.use(
 );
 
 app.use("/fetch-expences", authenticateUser, expenseController.fetchExpense);
+
+app.use("/fetch-downloadedexpensedata", authenticateUser, downloadexpenseController.fetchDownloadedExpenses);
 
 app.use(
   "/fetch-totalexpencesbyuser",
@@ -63,6 +72,9 @@ Order.belongsTo(User);
 
 User.hasMany(Forgotpass);
 Forgotpass.belongsTo(User);
+
+User.hasMany(ExpenseDownloadhistory);
+ExpenseDownloadhistory.belongsTo(User);
 
 // Sequelize.sync({force:true})
 Sequelize.sync()
