@@ -1,8 +1,11 @@
+const dotenv = require("dotenv").config();
 const { Sequelize } = require("sequelize").Sequelize;
 
-const sequelize = new Sequelize("expense-tracker", "root", "2112", {
+const { DB_NAME, DB_PASSWORD, DB_USERNAME, DB_HOST } = dotenv.parsed;
+
+const sequelize = new Sequelize(DB_NAME, DB_USERNAME, DB_PASSWORD, {
   dialect: "mysql",
-  host: "localhost",
+  host: DB_HOST,
 });
 
 module.exports = sequelize;
