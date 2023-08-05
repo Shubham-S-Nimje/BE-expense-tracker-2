@@ -76,7 +76,7 @@ exports.fetchExpense = (req, res, next) => {
 
 exports.deleteExpense = async (req, res, next) => {
   const expenseid = req.params.id;
-  // console.log(expenseid);
+  console.log(expenseid);
 
   const t = await sequelize.transaction();
   try {

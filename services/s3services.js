@@ -1,9 +1,10 @@
 const AWS = require("aws-sdk");
+const dotenv = require("dotenv").config();
 
 const uploadToS3 = async (data, filename) => {
-  const BUCKET_NAME = "expense-tracker-app-0408";
-  const IAM_USER_KEY = "AKIAZDLCDKVCJ5LDFXG2";
-  const IAM_USER_SECRET = "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";
+const { BUCKET_NAME, IAM_USER_KEY, IAM_USER_SECRET} = dotenv.parsed;
+
+  // console.log(BUCKET_NAME, IAM_USER_KEY, IAM_USER_SECRET)
 
   const s3bucket = new AWS.S3({
     accessKeyId: IAM_USER_KEY,

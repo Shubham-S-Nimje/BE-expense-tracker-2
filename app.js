@@ -1,8 +1,14 @@
 const express = require("express");
 const Sequelize = require("./database");
+const dotenv = require("dotenv").config();
+const path = require("path");
 
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
+const fs = require('fs')
 
 const userController = require("./controllers/users");
 const expenseController = require("./controllers/expenses");
@@ -19,6 +25,15 @@ const ExpenseDownloadhistory = require("./models/expense-download-history.js");
 const authenticateUser = require("./middleware/auth");
 
 const app = express();
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+app.use(helmet());
+app.use(compression());
+// app.use(morgan("combined"), { stream: accessLogStream });
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -54,7 +69,11 @@ app.use(
 
 app.use("/fetch-expences", authenticateUser, expenseController.fetchExpense);
 
-app.use("/fetch-downloadedexpensedata", authenticateUser, downloadexpenseController.fetchDownloadedExpenses);
+app.use(
+  "/fetch-downloadedexpensedata",
+  authenticateUser,
+  downloadexpenseController.fetchDownloadedExpenses
+);
 
 app.use(
   "/fetch-totalexpencesbyuser",
@@ -76,10 +95,12 @@ Forgotpass.belongsTo(User);
 User.hasMany(ExpenseDownloadhistory);
 ExpenseDownloadhistory.belongsTo(User);
 
+// console.log(dotenv.parsed.PORT)
 // Sequelize.sync({force:true})
 Sequelize.sync()
   .then((result) => {
     // console.error(result);
+    // app.listen(dotenv.parsed.PORT || 4000);
     app.listen(4000);
   })
   .catch((err) => console.error(err));
