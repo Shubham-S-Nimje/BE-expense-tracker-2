@@ -8,7 +8,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
-const fs = require('fs')
+const fs = require("fs");
 
 const userController = require("./controllers/users");
 const expenseController = require("./controllers/expenses");
@@ -33,7 +33,7 @@ const accessLogStream = fs.createWriteStream(
 
 app.use(helmet());
 app.use(compression());
-// app.use(morgan("combined"), { stream: accessLogStream });
+app.use(morgan("combined", { stream: accessLogStream }));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
