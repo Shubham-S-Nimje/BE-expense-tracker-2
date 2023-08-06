@@ -100,8 +100,8 @@ ExpenseDownloadhistory.belongsTo(User);
 Sequelize.sync()
   .then((result) => {
     // console.error(result);
-    // app.listen(dotenv.parsed.PORT || 4000);
-    app.listen(4000);
+    app.listen(dotenv.parsed.DB_HOST);
+    // app.listen(4000);
   })
   .catch((err) => console.error(err));
 // app.listen(3000);
