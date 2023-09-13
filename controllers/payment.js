@@ -14,40 +14,31 @@ var rzpinstance = new Razorpay({
 exports.premiumUser = async (req, res, next) => {
   // const { userid, amount } = req.body;
   // console.log(req.user);
-  // users
-  // .createOrder({
-  //   orderid: order.id,
-  //   status: "pending",
-  // })
-  // console.log(req.user.id)
-  const t = await sequelize.transaction();
   try {
     const options = {
       amount: 50000,
       currency: "INR",
       // recept: "recpt45jk",
     };
-    const order = await rzpinstance.orders.create(options, { transaction: t });
+    const order = await rzpinstance.orders.create(options);
     // res.json(order);
     if (!order) {
-      await t.rollback();
       return res.status(500).send("Some error occured");
     }
-    await Order.create(
-      {
-        paymentid: order.id,
-        orderid: order.id,
-        status: "PENDING",
-      },
-      { transaction: t }
-    );
+    await Order({
+      paymentid: order.id,
+      orderid: order.id,
+      status: "PENDING",
+    });
+
+    await Order.save();
+
     res.status(201).json({
       order: order,
       key_id: rzpinstance.key_id,
     });
   } catch (error) {
-    await t.commit();
-    console.log(error.message);
+    // console.log(error.message);
     res.status(500).send(error);
   }
 };
@@ -61,37 +52,23 @@ exports.paymentSuccess = async (req, res, next) => {
     razorpaySignature,
   } = req.body;
   // console.log(req.user.id);
-  const t = await sequelize.transaction();
   try {
-    const promise1 = Order.update(
+    const promise1 = Order.findOneAndUpdate(
+      { orderid: razorpayOrderId },
       {
         status: "SUCCESSFUL",
         paymentid: razorpayPaymentId,
         orderId: razorpayOrderId,
         userId: req.user.id,
-      },
-      {
-        where: {
-          orderid: razorpayOrderId,
-        },
-        transaction: t,
       }
     );
 
-    const promise2 = User.update(
-      {
-        ispremiumuser: true,
-      },
-      {
-        where: {
-          id: req.user.id,
-        },
-      }
-    );
+    const promise2 = User.findById(req.user.id, {
+      ispremiumuser: true,
+    });
 
     Promise.all([promise1, promise2])
       .then(() => {
-        t.commit();
         res.status(201).json({
           msg: "Payment successfull!.",
           orderId: razorpayOrderId,
@@ -99,11 +76,9 @@ exports.paymentSuccess = async (req, res, next) => {
         });
       })
       .catch((err) => {
-        t.rollback();
         res.status(400).json({ error: err });
       });
   } catch (err) {
-    t.rollback();
     //   console.log(err);
     return res.status(400).json({ error: err });
   }

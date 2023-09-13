@@ -1,5 +1,6 @@
 const dotenv = require("dotenv").config();
 const { createTransport } = require("nodemailer");
+const nodemailer = require("nodemailer");
 const Forgotpass = require("../models/forgot-pass");
 const User = require("../models/user-table");
 const { UUIDV4 } = require("sequelize");
@@ -13,13 +14,17 @@ exports.forgotPassword = async (req, res, next) => {
 
   const { email } = req.body;
   const token = uuidv4();
-  console.log(token);
+  // console.log(token);
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ email });
     if (user) {
-      const id = token;
-      await Forgotpass.create({ id, active: true, userId: user.id });
+      const forgotpass = await Forgotpass({
+        token,
+        active: true,
+        userId: user._id,
+      });
+      await forgotpass.save();
 
       const transporter = createTransport({
         host: "smtp-relay.brevo.com",
@@ -31,7 +36,9 @@ exports.forgotPassword = async (req, res, next) => {
         },
       });
 
-      const resetLink = `http://localhost:4000/resetpassword/${token}`;
+      // console.log(transporter);
+
+      const resetLink = `http://localhost:4000/auth/resetpassword/${token}`;
 
       const mailOptions = {
         from: "shubhamnimje77@gmail.com",
@@ -41,23 +48,23 @@ exports.forgotPassword = async (req, res, next) => {
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log("Email sent successfully", info.messageId);
+      // console.log("Email sent successfully", info.messageId);
       res.status(200).json({ message: "Email sent successfully" });
     } else {
       res.status(404).json({ error: "User not found", success: false });
     }
   } catch (error) {
-    console.log("Error sending email:", error);
+    // console.log("Error sending email:", error);
     res.status(500).json({ error: "Error sending email" });
   }
 };
 
 exports.resetpassword = (req, res) => {
-  const id = req.params.requestId;
-  console.log(id);
-  Forgotpass.findOne({ where: { id: id } }).then((Forgotpassrequest) => {
+  const token = req.params.requestId;
+  // console.log(token);
+  Forgotpass.findOne({ token }).then((Forgotpassrequest) => {
     if (Forgotpassrequest) {
-      Forgotpassrequest.update({ isactive: false }); // Corrected 'active' to 'isactive'
+      Forgotpass.findOneAndUpdate(token, { isactive: false });
       res.send(`<html>
             <script>
               function formsubmitted(e){
@@ -65,7 +72,7 @@ exports.resetpassword = (req, res) => {
                 console.log('called');
               }
             </script>
-            <form action="/updatepassword/${id}" method="post"> <!-- Changed method to "post" -->
+            <form action="/auth/updatepassword/${token}" method="post"> <!-- Changed method to "post" -->
               <label for="newpassword">Enter New password</label>
               <input name="newpassword" type="password" required></input>
               <button type="submit">reset password</button> <!-- Added "type" attribute to the button -->
@@ -82,22 +89,18 @@ exports.updatepassword = async (req, res) => {
     const { newpassword } = req.body;
     const { resetId } = req.params;
 
-    //   console.log(newpassword,resetId)
+    // console.log(newpassword,resetId)
 
-    const resetpasswordrequest = await Forgotpass.findOne({
-      where: { id: resetId },
-    });
+    const resetpasswordrequest = await Forgotpass.findOne({ token: resetId });
 
-    //   console.log(resetpasswordrequest)
+    // console.log(resetpasswordrequest);
 
     if (!resetpasswordrequest) {
       return res
         .status(404)
         .json({ error: "Invalid reset password link", success: false });
     }
-    const user = await User.findOne({
-      where: { id: resetpasswordrequest.userId },
-    });
+    const user = await User.findById(resetpasswordrequest.userId);
     if (!user) {
       return res.status(404).json({ error: "No user exists", success: false });
     }
@@ -106,7 +109,9 @@ exports.updatepassword = async (req, res) => {
     try {
       const salt = await bcrypt.genSalt(saltRounds);
       const hash = await bcrypt.hash(newpassword, salt);
-      await user.update({ password: hash });
+      await User.findByIdAndUpdate(resetpasswordrequest.userId, {
+        password: hash,
+      });
       // res
       //   .status(201)
       //   .json({

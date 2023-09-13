@@ -1,17 +1,33 @@
-const { Sequelize } = require("sequelize").Sequelize;
-const sequelize = require("../database");
+const mongoose = require("mongoose");
 
-const ExpenseDownloadhistory = sequelize.define("expensedownloadhistory", {
-  id: {
-    type: Sequelize.INTEGER,
-    allowNull: false,
-    autoIncrement: true,
-    primaryKey: true,
+const Schema = mongoose.Schema;
+
+const expensedownloadhistorySchema = new Schema({
+  url: {
+    type: String,
+    required: true,
   },
-  url: { 
-    type: Sequelize.STRING,
-    allowNull: false,
-  }
 });
 
-module.exports = ExpenseDownloadhistory;
+module.exports = mongoose.model(
+  "ExpenseDownloadhistory",
+  expensedownloadhistorySchema
+);
+
+// const { Sequelize } = require("sequelize").Sequelize;
+// const sequelize = require("../database");
+
+// const ExpenseDownloadhistory = sequelize.define("expensedownloadhistory", {
+//   id: {
+//     type: Sequelize.INTEGER,
+//     allowNull: false,
+//     autoIncrement: true,
+//     primaryKey: true,
+//   },
+//   url: {
+//     type: Sequelize.STRING,
+//     allowNull: false,
+//   }
+// });
+
+// module.exports = ExpenseDownloadhistory;

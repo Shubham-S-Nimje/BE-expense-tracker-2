@@ -20,10 +20,10 @@ const { BUCKET_NAME, IAM_USER_KEY, IAM_USER_SECRET} = dotenv.parsed;
 
   try {
     const s3response = await s3bucket.upload(params).promise();
-    console.log("File uploaded successfully:", s3response.Location);
+    // console.log("File uploaded successfully:", s3response.Location);
     return s3response.Location;
   } catch (err) {
-    console.log("Error uploading file to S3:", err);
+    // console.log("Error uploading file to S3:", err);
     throw err;
   }
 };

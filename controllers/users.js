@@ -4,6 +4,7 @@ var jwt = require("jsonwebtoken");
 const sequelize = require("../database");
 
 const JWT_SECRET = "expense@app";
+
 exports.addUser = async (req, res, next) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
@@ -12,21 +13,24 @@ exports.addUser = async (req, res, next) => {
       .json({ error: "Email And Password are required fields!" });
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const secretpass = await bcrypt.hash(password, salt);
-
-  const t = await sequelize.transaction();
-
   try {
-    const createuser = await User.create(
-      {
-        username: username,
-        email: email,
-        password: secretpass,
-        ispremiumuser: false,
-      },
-      { transaction: t }
-    );
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: `Email already exists` });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const secretpass = await bcrypt.hash(password, salt);
+
+    const createuser = await User({
+      username: username,
+      email: email,
+      password: secretpass,
+      ispremiumuser: false,
+      totalExpensemoney: "0",
+    });
+
+    await createuser.save();
 
     const data = {
       user: {
@@ -37,50 +41,32 @@ exports.addUser = async (req, res, next) => {
     const authToken = jwt.sign(data, JWT_SECRET);
     // console.log(jwtdata)
 
-    await t.commit();
-
     res.status(201).json({
       message: "Account created successfully!",
       data: { authToken },
     });
   } catch (err) {
-    await t.rollback();
-    //   console.log(err.fields.username_UNIQUE);
-
-    let errorin = "";
-    if (err.fields.username_UNIQUE) {
-      errorin = `Username "${err.fields.username_UNIQUE}"`;
-
-      // console.log(err.fields.username_UNIQUE);
-    } else if (err.fields.email_UNIQUE) {
-      errorin = `Email "${err.fields.email_UNIQUE}"`;
-
-      // console.log(err.fields.email_UNIQUE);
-    }
-    return res.status(400).json({ error: `${errorin} already exists` });
+    console.error(err);
+    return res.status(400).json({
+      error: "Error while creating account!",
+    });
   }
-
   //   console.log(req.body);
 };
 
-exports.loginUser = (req, res, next) => {
+exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
-  //   bcrypt.compare(password, Users.password, function (err, result) {
-  //     console.log(result);
-  //   });
-  User.findAll({
-    where: { email: email },
-  })
-    .then((user) => {
-      bcrypt.compare(password, user[0].password, function (err, result) {
-        // console.log(result);
 
+  try {
+    const checkUser = await User.findOne({ email });
+    // console.log(checkUser);
+    if (checkUser) {
+      bcrypt.compare(password, checkUser.password, function (err, result) {
+        // console.log(result);
         if (result) {
-          // console.log(user[0].id)
-          // console.log("User found:",user[0].password);
           const data = {
             user: {
-              id: user[0].id,
+              id: checkUser.id,
             },
           };
           const authToken = jwt.sign(data, JWT_SECRET);
@@ -88,35 +74,27 @@ exports.loginUser = (req, res, next) => {
             .status(200)
             .json({ message: "Login successful", user: { authToken } });
         } else {
-          console.log("User not found");
-          res.status(401).json({ message: "User not found" });
+          // console.log("User not found");
+          res.status(401).json({ message: "Invalid Password" });
         }
       });
-    })
-    .catch((err) => {
-      console.log("Error:", err);
-      res.status(400).json({ message: "Error logging in" });
-    });
-
+    }
+  } catch (err) {
+    // console.log("Error:", err);
+    res.status(400).json({ message: "Error while log in" });
+  }
   //   console.log(req.body);
 };
 
-exports.fetchUser = (req, res, next) => {
-  const { id } = req.user;
-  // console.log(id);
-  User.findOne({
-    where: { id: id },
-  })
-    .then((user) => {
+exports.fetchUser = async (req, res, next) => {
+  try {
+    if (req.user) {
       res
         .status(201)
-        .json({ message: "User fetched successfully", user: user });
-    })
-    .catch((err) => {
-      // console.log("Error:", err);
-      res
-        .status(400)
-        .json({ message: "Error while fetching user", error: err });
-    });
+        .json({ message: "User fetched successfully", user: req.user });
+    }
+  } catch (err) {
+    // console.log("Error:", err);
+    res.status(400).json({ message: "Error while fetching user", error: err });
+  }
 };
-

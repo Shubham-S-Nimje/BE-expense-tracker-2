@@ -3,6 +3,8 @@ const Sequelize = require("./database");
 const dotenv = require("dotenv").config();
 const path = require("path");
 
+const mongoConnect = require("./database").mongoConnect;
+
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -10,19 +12,16 @@ const compression = require("compression");
 const morgan = require("morgan");
 const fs = require("fs");
 
-const userController = require("./controllers/users");
-const expenseController = require("./controllers/expenses");
-const paymentController = require("./controllers/payment");
-const forgotpassController = require("./controllers/forgotpass");
-const downloadexpenseController = require("./controllers/downloadexpenses");
-
 const User = require("./models/user-table");
 const Order = require("./models/payment-table");
 const Expense = require("./models/expense-table");
 const Forgotpass = require("./models/forgot-pass");
 const ExpenseDownloadhistory = require("./models/expense-download-history.js");
 
-const authenticateUser = require("./middleware/auth");
+const authRoutes = require("./routes/auth");
+const expenseRoutes = require("./routes/expense");
+const paymentRoutes = require("./routes/payment");
+const { default: mongoose } = require("mongoose");
 
 const app = express();
 
@@ -39,69 +38,41 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-app.use("/add-user", userController.addUser);
+app.use("/auth", authRoutes);
+app.use("/expense", expenseRoutes);
+app.use("/payment", paymentRoutes);
 
-app.use("/login-user", userController.loginUser);
+// User.hasMany(Expense);
+// Expense.belongsTo(User);
 
-app.use("/fetch-user", authenticateUser, userController.fetchUser);
+// User.hasMany(Order);
+// Order.belongsTo(User);
 
-app.use("/activate-premium", authenticateUser, paymentController.premiumUser);
+// User.hasMany(Forgotpass);
+// Forgotpass.belongsTo(User);
 
-app.use("/add-expences", authenticateUser, expenseController.addExpense);
+// User.hasMany(ExpenseDownloadhistory);
+// ExpenseDownloadhistory.belongsTo(User);
 
-app.use(
-  "/user/download-expenses",
-  authenticateUser,
-  downloadexpenseController.downloadExpense
-);
-
-app.use("/forgotpassword", forgotpassController.forgotPassword);
-
-app.get("/resetpassword/:requestId", forgotpassController.resetpassword);
-
-app.post("/updatepassword/:resetId", forgotpassController.updatepassword);
-
-app.use(
-  "/delete-expences/:id",
-  authenticateUser,
-  expenseController.deleteExpense
-);
-
-app.use("/fetch-expences", authenticateUser, expenseController.fetchExpense);
-
-app.use(
-  "/fetch-downloadedexpensedata",
-  authenticateUser,
-  downloadexpenseController.fetchDownloadedExpenses
-);
-
-app.use(
-  "/fetch-totalexpencesbyuser",
-  authenticateUser,
-  expenseController.fetchTotalexpense
-);
-
-app.use("/payment-success", authenticateUser, paymentController.paymentSuccess);
-
-User.hasMany(Expense);
-Expense.belongsTo(User);
-
-User.hasMany(Order);
-Order.belongsTo(User);
-
-User.hasMany(Forgotpass);
-Forgotpass.belongsTo(User);
-
-User.hasMany(ExpenseDownloadhistory);
-ExpenseDownloadhistory.belongsTo(User);
+mongoose
+  .connect(
+    "mongodb+srv://shubhamsnimje:rkNC6Qk0QAYQLOA8@cluster0.trnlavl.mongodb.net/expenses?retryWrites=true&w=majority"
+  )
+  .then((result) => {
+    console.log("connected to mongoose");
+    app.listen(4000);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 
 // console.log(dotenv.parsed.PORT)
 // Sequelize.sync({force:true})
-Sequelize.sync()
-  .then((result) => {
-    // console.error(result);
-    // app.listen(dotenv.parsed.DB_HOST);
-    app.listen(4000);
-  })
-  .catch((err) => console.error(err));
+// Sequelize.sync()
+//   .then((result) => {
+//     // console.error(result);
+//     // app.listen(dotenv.parsed.DB_HOST);
+//     app.listen(4000);
+//   })
+//   .catch((err) => console.error(err));
 // app.listen(3000);

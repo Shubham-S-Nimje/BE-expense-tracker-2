@@ -5,11 +5,7 @@ const ExpenseDownloadhistory = require("../models/expense-download-history");
 exports.downloadExpense = async (req, res, next) => {
   if (req.user.ispremiumuser) {
     try {
-      const result = await Expense.findAll({
-        where: {
-          userid: req.user.id,
-        },
-      });
+      const result = await Expense.find({ userid: req.user.id });
 
       if (result) {
         const stringifiedExpense = JSON.stringify(result);
@@ -19,10 +15,12 @@ exports.downloadExpense = async (req, res, next) => {
         const fileUrl = await uploadToS3(stringifiedExpense, filename);
         // console.log(fileUrl);
 
-        const downloadHistoryEntry = await ExpenseDownloadhistory.create({
+        const downloadHistoryEntry = await ExpenseDownloadhistory({
           url: fileUrl,
           userId: req.user.id,
         });
+
+        await downloadHistoryEntry.save();
 
         res.status(200).json({
           message: "Expense downloaded successfully",
@@ -46,15 +44,11 @@ exports.downloadExpense = async (req, res, next) => {
 exports.fetchDownloadedExpenses = async (req, res, next) => {
   if (req.user.ispremiumuser) {
     try {
-      const result = await ExpenseDownloadhistory.findAll({
-        where: {
-          userid: req.user.id,
-        },
-      });
+      const result = await ExpenseDownloadhistory.find({ userid: req.user.id });
 
       if (result) {
-        const expenseshistory = JSON.stringify(result);
-        console.log(expenseshistory);
+        // const expenseshistory = JSON.stringify(result);
+        // console.log(expenseshistory);
 
         res.status(200).json({
           message: "Expense History downloaded successfully",

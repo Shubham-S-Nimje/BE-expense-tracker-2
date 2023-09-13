@@ -14,7 +14,7 @@ const authenticateUser = (req, res, next) => {
       return res.status(401).json({ message: "Invalid token" });
     }
     // console.log(decoded.user.id)
-    User.findByPk(decoded.user.id)
+    User.findById(decoded.user.id)
       .then((user) => {
         if (!user) {
           return res.status(404).json({ message: "User not found" });
@@ -25,7 +25,7 @@ const authenticateUser = (req, res, next) => {
         next();
       })
       .catch((err) => {
-        console.log("Error:", err);
+        // console.log("Error:", err);
         res.status(400).json({ message: "Error while fetching user" });
       });
   });
